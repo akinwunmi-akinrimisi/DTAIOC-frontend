@@ -13,6 +13,7 @@ import {
 import { Wallet, ShieldCheck, AlertCircle } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { BaseLogo } from "@/components/base-logo"
 
 interface WalletConnectProps {
   buttonText?: string
@@ -68,6 +69,15 @@ export function WalletConnect({
 
         <div className="grid gap-4 py-4">
           <Button
+            onClick={() => handleConnect("Base")}
+            disabled={isConnecting}
+            className="flex items-center justify-center bg-gradient-to-r from-[#0052FF] to-[#5299FF] hover:from-[#0052FF] hover:to-[#5299FF] hover:opacity-90"
+          >
+            <BaseLogo className="mr-2 h-6 w-6" />
+            {isConnecting ? "Connecting..." : "Base Smart Wallet (Recommended)"}
+          </Button>
+
+          <Button
             onClick={() => handleConnect("MetaMask")}
             disabled={isConnecting}
             className="flex items-center justify-center"
@@ -75,6 +85,7 @@ export function WalletConnect({
             <img src="/placeholder.svg?height=24&width=24" alt="MetaMask" className="mr-2 h-6 w-6" />
             {isConnecting ? "Connecting..." : "MetaMask"}
           </Button>
+
           <Button
             onClick={() => handleConnect("Safe")}
             disabled={isConnecting}
@@ -101,10 +112,6 @@ export function WalletConnect({
           <Button disabled={true} variant="outline" className="flex items-center justify-center opacity-60">
             <img src="/placeholder.svg?height=24&width=24" alt="Coinbase" className="mr-2 h-6 w-6" />
             Coinbase Wallet (Coming Soon)
-          </Button>
-          <Button disabled={true} variant="outline" className="flex items-center justify-center opacity-60">
-            <img src="/placeholder.svg?height=24&width=24" alt="Base" className="mr-2 h-6 w-6" />
-            Base Smart Wallet (Coming Soon)
           </Button>
 
           <div className="text-center text-sm text-gray-500 mt-2">

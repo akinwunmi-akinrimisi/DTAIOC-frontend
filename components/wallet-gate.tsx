@@ -8,6 +8,7 @@ import { useWeb3 } from "@/contexts/web3-context"
 import { Button } from "@/components/ui/button"
 import { Wallet } from "lucide-react"
 import { WalletPrompt } from "@/components/wallet-prompt"
+import { BaseLogo } from "@/components/base-logo"
 
 export function WalletGate({ children }: { children: React.ReactNode }) {
   const { isConnected, connectWallet, isConnecting } = useWeb3()
@@ -48,11 +49,11 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
     )
   }
 
-  const handleConnect = async () => {
+  const handleConnect = async (type: "MetaMask" | "Base") => {
     try {
-      await connectWallet("MetaMask")
+      await connectWallet(type)
     } catch (error) {
-      console.error("Failed to connect wallet:", error)
+      console.error(`Failed to connect with ${type}:`, error)
     }
   }
 
@@ -76,16 +77,45 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
             Please connect your wallet to access DTriviaAIOnChain. You need to be connected to interact with the
             application.
           </p>
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-300"></div>
-            <Button
-              onClick={handleConnect}
-              disabled={isConnecting}
-              className="w-full bg-gradient-to-r from-game-primary to-game-secondary hover:shadow-neon text-white relative"
-            >
-              <Wallet className="mr-2 h-4 w-4" />
-              {isConnecting ? "Connecting..." : "Connect Wallet"}
-            </Button>
+
+          <div className="space-y-4">
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0052FF] to-[#5299FF] rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-300"></div>
+              <Button
+                onClick={() => handleConnect("Base")}
+                disabled={isConnecting}
+                className="w-full bg-gradient-to-r from-[#0052FF] to-[#5299FF] hover:opacity-90 relative"
+              >
+                <BaseLogo className="mr-2 h-5 w-5" />
+                {isConnecting ? "Connecting..." : "Connect with Base Smart Wallet (Recommended)"}
+              </Button>
+            </div>
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-300"></div>
+              <Button
+                onClick={() => handleConnect("MetaMask")}
+                disabled={isConnecting}
+                className="w-full bg-gradient-to-r from-game-primary to-game-secondary hover:shadow-neon text-white relative"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                {isConnecting ? "Connecting..." : "Connect with MetaMask"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="mt-6 text-sm text-gray-400">
+            <p>
+              New to Web3?{" "}
+              <a
+                href="https://docs.base.org/tools/smart-wallets"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                Learn about Base Smart Wallets
+              </a>
+            </p>
           </div>
         </div>
       </div>

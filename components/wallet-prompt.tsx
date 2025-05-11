@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button"
 import { Wallet } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
+import { BaseLogo } from "@/components/base-logo"
 
 interface WalletPromptProps {
   isOpen: boolean
@@ -21,11 +22,11 @@ export function WalletPrompt({ isOpen, onClose }: WalletPromptProps) {
     }
   }, [isConnected, onClose])
 
-  const handleConnect = async () => {
+  const handleConnect = async (type: "MetaMask" | "Base") => {
     try {
-      await connectWallet("MetaMask")
+      await connectWallet(type)
     } catch (error) {
-      console.error("Failed to connect wallet:", error)
+      console.error(`Failed to connect with ${type}:`, error)
     }
   }
 
@@ -70,16 +71,30 @@ export function WalletPrompt({ isOpen, onClose }: WalletPromptProps) {
               </li>
             </ul>
 
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
-              <Button
-                onClick={handleConnect}
-                disabled={isConnecting}
-                className="w-full bg-gradient-to-r from-game-primary to-game-secondary hover:shadow-neon text-white relative"
-              >
-                <Wallet className="mr-2 h-4 w-4" />
-                {isConnecting ? "Connecting..." : "Connect Wallet"}
-              </Button>
+            <div className="space-y-4">
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#0052FF] to-[#5299FF] rounded-lg blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
+                <Button
+                  onClick={() => handleConnect("Base")}
+                  disabled={isConnecting}
+                  className="w-full bg-gradient-to-r from-[#0052FF] to-[#5299FF] hover:opacity-90 relative"
+                >
+                  <BaseLogo className="mr-2 h-4 w-4" />
+                  {isConnecting ? "Connecting..." : "Connect with Base Smart Wallet (Recommended)"}
+                </Button>
+              </div>
+
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
+                <Button
+                  onClick={() => handleConnect("MetaMask")}
+                  disabled={isConnecting}
+                  className="w-full bg-gradient-to-r from-game-primary to-game-secondary hover:shadow-neon text-white relative"
+                >
+                  <Wallet className="mr-2 h-4 w-4" />
+                  {isConnecting ? "Connecting..." : "Connect with MetaMask"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
