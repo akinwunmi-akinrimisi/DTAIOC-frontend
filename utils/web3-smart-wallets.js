@@ -1,28 +1,33 @@
 // Smart wallet integration utilities
-import { createPublicClient, http } from "viem"
+import { createPublicClient, http, createWalletClient, custom } from "viem"
 import { baseSepolia } from "viem/chains"
 
-// Placeholder for Base Smart Wallet integration
-// This is a simplified version that doesn't rely on the non-existent package
+// Initialize Base Smart Wallet
 export const initBaseSmartWallet = async (provider) => {
   try {
+    if (!provider) {
+      throw new Error("No provider available. Please install a wallet extension.")
+    }
+
     // Create a public client for Base Sepolia
     const publicClient = createPublicClient({
       chain: baseSepolia,
       transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://sepolia.base.org"),
     })
 
-    // For development, return a mock address
-    const mockAddress =
-      "0x" +
-      Array(40)
-        .fill(0)
-        .map(() => Math.floor(Math.random() * 16).toString(16))
-        .join("")
+    // Create a wallet client using the provider
+    const walletClient = createWalletClient({
+      chain: baseSepolia,
+      transport: custom(provider),
+    })
+
+    // Get the wallet address
+    const [address] = await walletClient.getAddresses()
 
     return {
       publicClient,
-      address: mockAddress,
+      walletClient,
+      address,
     }
   } catch (error) {
     console.error("Failed to initialize Base Smart Wallet:", error)
@@ -33,19 +38,30 @@ export const initBaseSmartWallet = async (provider) => {
 // Connect to Base Smart Wallet
 export const connectBaseSmartWallet = async (provider) => {
   try {
-    // For development, return a mock wallet connection
-    // In a real implementation, we would use the Base Smart Wallet SDK
-    const mockAddress =
-      "0x" +
-      Array(40)
-        .fill(0)
-        .map(() => Math.floor(Math.random() * 16).toString(16))
-        .join("")
+    if (!provider) {
+      throw new Error("No provider available. Please install a wallet extension.")
+    }
+
+    // Request account access
+    await provider.request({ method: "eth_requestAccounts" })
+
+    // Create a wallet client
+    const walletClient = createWalletClient({
+      chain: baseSepolia,
+      transport: custom(provider),
+    })
+
+    // Get the wallet address
+    const [address] = await walletClient.getAddresses()
+
+    // Get the chain ID
+    const chainId = await walletClient.getChainId()
 
     return {
       type: "Base",
-      address: mockAddress,
-      networkId: baseSepolia.id,
+      address,
+      networkId: chainId,
+      walletClient,
     }
   } catch (error) {
     console.error("Base Smart Wallet connection error:", error)
@@ -56,8 +72,7 @@ export const connectBaseSmartWallet = async (provider) => {
 // Connect to WalletConnect
 export const connectWalletConnect = async () => {
   try {
-    // Implementation would depend on WalletConnect SDK
-    // This is a placeholder
+    // This would use the WalletConnect SDK in a real implementation
     throw new Error("WalletConnect integration not fully implemented yet")
   } catch (error) {
     console.error("WalletConnect connection error:", error)
@@ -68,8 +83,7 @@ export const connectWalletConnect = async () => {
 // Connect to Coinbase Wallet
 export const connectCoinbaseWallet = async () => {
   try {
-    // Implementation would depend on Coinbase Wallet SDK
-    // This is a placeholder
+    // This would use the Coinbase Wallet SDK in a real implementation
     throw new Error("Coinbase Wallet integration not fully implemented yet")
   } catch (error) {
     console.error("Coinbase Wallet connection error:", error)

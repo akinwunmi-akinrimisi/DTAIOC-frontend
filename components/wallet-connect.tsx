@@ -10,10 +10,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Wallet, Loader2 } from "lucide-react"
+import { Wallet, Loader2, AlertCircle } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
 
 interface WalletConnectProps {
   buttonText?: string
@@ -31,6 +30,7 @@ export function WalletConnect({
   const [isOpen, setIsOpen] = useState(false)
   const { connectWallet, isConnecting, error, isConnected } = useWeb3()
   const [connecting, setConnecting] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   // Close dialog if connected
   useEffect(() => {
@@ -39,13 +39,15 @@ export function WalletConnect({
     }
   }, [isConnected])
 
-  const handleConnect = async () => {
+  const handleConnect = async (walletType: "Base" | "MetaMask" | "WalletConnect" | "Coinbase" | "Safe") => {
     try {
       setConnecting(true)
-      await connectWallet("Base")
+      setLocalError(null)
+      await connectWallet(walletType)
       setIsOpen(false)
     } catch (error) {
-      console.error(`Failed to connect with Base Smart Wallet:`, error)
+      console.error(`Failed to connect with ${walletType}:`, error)
+      setLocalError(error instanceof Error ? error.message : `Failed to connect with ${walletType}`)
     } finally {
       setConnecting(false)
     }
@@ -60,20 +62,20 @@ export function WalletConnect({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connect Smart Wallet</DialogTitle>
-          <DialogDescription>Connect your Base Smart Wallet to DTriviaAIOnChain</DialogDescription>
+          <DialogTitle>Connect Wallet</DialogTitle>
+          <DialogDescription>Connect your wallet to DTriviaAIOnChain</DialogDescription>
         </DialogHeader>
 
-        {error && (
+        {(error || localError) && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{error || localError}</AlertDescription>
           </Alert>
         )}
 
         <div className="grid gap-4 py-4">
           <Button
-            onClick={handleConnect}
+            onClick={() => handleConnect("Base")}
             disabled={connecting}
             className="flex items-center justify-center bg-gradient-to-r from-game-primary to-game-secondary"
           >

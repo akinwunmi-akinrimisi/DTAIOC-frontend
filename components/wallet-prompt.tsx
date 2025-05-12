@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Wallet, Loader2 } from "lucide-react"
+import { Wallet, Loader2, AlertCircle } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface WalletPromptProps {
   isOpen: boolean
@@ -12,8 +13,9 @@ interface WalletPromptProps {
 }
 
 export function WalletPrompt({ isOpen, onClose }: WalletPromptProps) {
-  const { isConnected, connectWallet, isConnecting } = useWeb3()
+  const { isConnected, connectWallet, isConnecting, error } = useWeb3()
   const [connecting, setConnecting] = useState(false)
+  const [localError, setLocalError] = useState<string | null>(null)
 
   // Close the prompt if the user connects their wallet
   useEffect(() => {
@@ -25,9 +27,12 @@ export function WalletPrompt({ isOpen, onClose }: WalletPromptProps) {
   const handleConnect = async () => {
     try {
       setConnecting(true)
+      setLocalError(null)
       await connectWallet("Base")
+      onClose()
     } catch (error) {
       console.error("Failed to connect wallet:", error)
+      setLocalError(error instanceof Error ? error.message : "Failed to connect wallet")
     } finally {
       setConnecting(false)
     }
@@ -42,6 +47,13 @@ export function WalletPrompt({ isOpen, onClose }: WalletPromptProps) {
             You need to connect your wallet to access this feature.
           </DialogDescription>
         </DialogHeader>
+
+        {(error || localError) && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error || localError}</AlertDescription>
+          </Alert>
+        )}
 
         <div className="relative my-4">
           <div className="absolute inset-0 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur-md opacity-30"></div>

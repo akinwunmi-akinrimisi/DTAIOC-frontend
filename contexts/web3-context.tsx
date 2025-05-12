@@ -1,7 +1,8 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { initWeb3 } from "@/utils/web3"
+import { initWeb3, getTokenBalance } from "@/utils/web3"
+import { connectBaseSmartWallet } from "@/utils/web3-smart-wallets"
 
 interface Web3ContextType {
   address: string | null
@@ -27,6 +28,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [tokenBalance, setTokenBalance] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [walletClient, setWalletClient] = useState<any>(null)
 
   // Initialize from localStorage on mount
   useEffect(() => {
@@ -52,40 +54,51 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Connect wallet (Base Smart Wallet)
+  // Connect wallet
   const connectWallet = async (type: "MetaMask" | "Safe" | "WalletConnect" | "Coinbase" | "Base") => {
     setIsConnecting(true)
     setError(null)
 
     try {
-      // For development, use a mock implementation
-      // In a real implementation, this would use the actual wallet connection
-      const mockAddress =
-        "0x" +
-        Array(40)
-          .fill(0)
-          .map(() => Math.floor(Math.random() * 16).toString(16))
-          .join("")
+      let walletData
 
-      // Simulate a delay to mimic the connection process
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Connect based on wallet type
+      if (type === "Base") {
+        if (!window.ethereum) {
+          throw new Error("No Ethereum provider found. Please install a wallet extension.")
+        }
 
-      setAddress(mockAddress)
-      setWalletType("Base")
+        walletData = await connectBaseSmartWallet(window.ethereum)
+        setWalletClient(walletData.walletClient)
+      } else if (type === "MetaMask") {
+        throw new Error("MetaMask connection not implemented yet")
+      } else if (type === "WalletConnect") {
+        throw new Error("WalletConnect connection not implemented yet")
+      } else if (type === "Coinbase") {
+        throw new Error("Coinbase Wallet connection not implemented yet")
+      } else if (type === "Safe") {
+        throw new Error("Safe Wallet connection not implemented yet")
+      }
+
+      setAddress(walletData.address)
+      setWalletType(type)
       setIsConnected(true)
 
       // Save to localStorage
       localStorage.setItem(
         "walletData",
         JSON.stringify({
-          address: mockAddress,
+          address: walletData.address,
           basename,
-          walletType: "Base",
+          walletType: type,
         }),
       )
 
-      // Set mock token balance
-      setTokenBalance("100.00")
+      // Initialize Web3 with the provider
+      await initWeb3(window.ethereum)
+
+      // Fetch token balance
+      await refreshBalance()
     } catch (err) {
       console.error("Wallet connection error:", err)
       setError(err instanceof Error ? err.message : "Failed to connect wallet")
@@ -101,6 +114,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     setWalletType(null)
     setIsConnected(false)
     setTokenBalance(null)
+    setWalletClient(null)
     localStorage.removeItem("walletData")
   }
 
@@ -125,12 +139,8 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     if (!address) return
 
     try {
-      // For development, use a mock balance
-      setTokenBalance("100.00")
-
-      // In a real implementation, this would fetch the actual balance
-      // const balance = await getTokenBalance(address)
-      // setTokenBalance(balance)
+      const balance = await getTokenBalance(address)
+      setTokenBalance(balance)
     } catch (err) {
       console.error("Failed to fetch token balance:", err)
       // Don't set error state here to avoid disrupting the UI
