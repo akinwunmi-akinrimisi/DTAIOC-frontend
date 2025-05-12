@@ -369,6 +369,36 @@ export const generateQuestions = async (twitterUsername) => {
   }
 }
 
+/**
+ * Create a new basename
+ * @param {Object} data - Basename data (address, basename)
+ * @returns {Promise<Object>} - Creation response
+ */
+export const createBasename = async (data) => {
+  if (MOCK_MODE) {
+    console.log("Mock mode: Creating basename", data)
+    return {
+      address: data.address,
+      basename: `${data.basename}.base.eth`,
+    }
+  }
+
+  try {
+    // In a real implementation, this would call the Base Registrar API
+    // For now, we'll redirect to the Base Registrar website
+    window.open(`https://www.basename.app/register?name=${data.basename}`, "_blank")
+
+    // Return a mock response
+    return {
+      address: data.address,
+      basename: `${data.basename}.base.eth`,
+    }
+  } catch (error) {
+    console.error("API create basename error:", error)
+    throw error
+  }
+}
+
 export default {
   createGame,
   getGames,
@@ -378,4 +408,5 @@ export default {
   getLeaderboard,
   linkBasename,
   generateQuestions,
+  createBasename,
 }

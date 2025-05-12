@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { WalletConnect } from "@/components/wallet-connect"
 import { BasenameModal } from "@/components/basename-modal"
-import { Menu, X, LogOut, Trophy, Gamepad2, Home } from "lucide-react"
+import { Menu, X, LogOut, Trophy, Gamepad2, Home, UserPlus } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
 import { useToast } from "@/components/ui/use-toast"
 import { usePathname } from "next/navigation"
@@ -121,10 +121,21 @@ export function Navbar() {
                     </div>
                   </div>
                 )}
-                <div className="px-3 py-1 bg-game-dark-lighter rounded-md border border-game-dark-border">
+                <div className="px-3 py-1 bg-game-dark-lighter rounded-md border border-game-dark-border flex items-center">
                   <span className="text-sm text-white truncate max-w-[150px]">
                     {basename || (address && address.substring(0, 6) + "..." + address.substring(address.length - 4))}
                   </span>
+                  {!basename && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowBasenameModal(true)}
+                      className="ml-1 p-0 h-6 w-6"
+                      title="Set Basename"
+                    >
+                      <UserPlus className="h-4 w-4 text-primary" />
+                    </Button>
+                  )}
                 </div>
                 <Button
                   variant="outline"
@@ -225,10 +236,21 @@ export function Navbar() {
                       </span>
                     </div>
                   )}
-                  <div className="px-3 py-2 bg-game-dark-lighter rounded-md border border-game-dark-border text-center">
+                  <div className="px-3 py-2 bg-game-dark-lighter rounded-md border border-game-dark-border flex items-center justify-center">
                     <span className="text-sm text-white truncate">
                       {basename || (address && address.substring(0, 6) + "..." + address.substring(address.length - 4))}
                     </span>
+                    {!basename && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowBasenameModal(true)}
+                        className="ml-1 p-0 h-6 w-6"
+                        title="Set Basename"
+                      >
+                        <UserPlus className="h-4 w-4 text-primary" />
+                      </Button>
+                    )}
                   </div>
                   <Button
                     variant="outline"
