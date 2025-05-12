@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useWeb3 } from "@/contexts/web3-context"
 import { Button } from "@/components/ui/button"
-import { Wallet } from "lucide-react"
+import { Wallet, Loader2 } from "lucide-react"
 import { WalletPrompt } from "@/components/wallet-prompt"
 
 export function WalletGate({ children }: { children: React.ReactNode }) {
@@ -14,6 +14,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [showPrompt, setShowPrompt] = useState(false)
+  const [connecting, setConnecting] = useState(false)
 
   // Public routes that don't require wallet connection
   const publicRoutes = ["/", "/about", "/faq"]
@@ -50,9 +51,12 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
 
   const handleConnect = async () => {
     try {
+      setConnecting(true)
       await connectWallet("Base")
     } catch (error) {
       console.error("Failed to connect wallet:", error)
+    } finally {
+      setConnecting(false)
     }
   }
 
@@ -80,11 +84,20 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
             <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-300"></div>
             <Button
               onClick={handleConnect}
-              disabled={isConnecting}
+              disabled={connecting}
               className="w-full bg-gradient-to-r from-game-primary to-game-secondary hover:shadow-neon text-white relative"
             >
-              <Wallet className="mr-2 h-4 w-4" />
-              {isConnecting ? "Connecting..." : "Connect Smart Wallet"}
+              {connecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Connect Smart Wallet
+                </>
+              )}
             </Button>
           </div>
         </div>

@@ -1,8 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { connectBaseSmartWallet } from "@/utils/web3-smart-wallets"
-import { getTokenBalance, initWeb3 } from "@/utils/web3"
+import { initWeb3 } from "@/utils/web3"
 
 interface Web3ContextType {
   address: string | null
@@ -59,12 +58,19 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     setError(null)
 
     try {
-      let walletData
+      // For development, use a mock implementation
+      // In a real implementation, this would use the actual wallet connection
+      const mockAddress =
+        "0x" +
+        Array(40)
+          .fill(0)
+          .map(() => Math.floor(Math.random() * 16).toString(16))
+          .join("")
 
-      // Always use Base Smart Wallet regardless of the type parameter
-      walletData = await connectBaseSmartWallet(window.ethereum)
+      // Simulate a delay to mimic the connection process
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      setAddress(walletData.address)
+      setAddress(mockAddress)
       setWalletType("Base")
       setIsConnected(true)
 
@@ -72,14 +78,14 @@ export function Web3Provider({ children }: { children: ReactNode }) {
       localStorage.setItem(
         "walletData",
         JSON.stringify({
-          address: walletData.address,
+          address: mockAddress,
           basename,
           walletType: "Base",
         }),
       )
 
-      // Fetch token balance
-      await refreshBalance()
+      // Set mock token balance
+      setTokenBalance("100.00")
     } catch (err) {
       console.error("Wallet connection error:", err)
       setError(err instanceof Error ? err.message : "Failed to connect wallet")
@@ -119,8 +125,12 @@ export function Web3Provider({ children }: { children: ReactNode }) {
     if (!address) return
 
     try {
-      const balance = await getTokenBalance(address)
-      setTokenBalance(balance)
+      // For development, use a mock balance
+      setTokenBalance("100.00")
+
+      // In a real implementation, this would fetch the actual balance
+      // const balance = await getTokenBalance(address)
+      // setTokenBalance(balance)
     } catch (err) {
       console.error("Failed to fetch token balance:", err)
       // Don't set error state here to avoid disrupting the UI

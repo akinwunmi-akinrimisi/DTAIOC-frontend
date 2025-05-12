@@ -12,14 +12,17 @@ export const initBaseSmartWallet = async (provider) => {
       transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://sepolia.base.org"),
     })
 
-    // For now, we'll use the provider's signer directly
-    // In a real implementation, we would use the Base Smart Wallet SDK
-    const signer = await provider.getSigner()
-    const address = await signer.getAddress()
+    // For development, return a mock address
+    const mockAddress =
+      "0x" +
+      Array(40)
+        .fill(0)
+        .map(() => Math.floor(Math.random() * 16).toString(16))
+        .join("")
 
     return {
       publicClient,
-      address,
+      address: mockAddress,
     }
   } catch (error) {
     console.error("Failed to initialize Base Smart Wallet:", error)
@@ -30,14 +33,18 @@ export const initBaseSmartWallet = async (provider) => {
 // Connect to Base Smart Wallet
 export const connectBaseSmartWallet = async (provider) => {
   try {
-    // For now, just return the address from the provider
+    // For development, return a mock wallet connection
     // In a real implementation, we would use the Base Smart Wallet SDK
-    const signer = await provider.getSigner()
-    const address = await signer.getAddress()
+    const mockAddress =
+      "0x" +
+      Array(40)
+        .fill(0)
+        .map(() => Math.floor(Math.random() * 16).toString(16))
+        .join("")
 
     return {
       type: "Base",
-      address,
+      address: mockAddress,
       networkId: baseSepolia.id,
     }
   } catch (error) {

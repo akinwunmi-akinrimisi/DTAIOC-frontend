@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Wallet } from "lucide-react"
+import { Wallet, Loader2 } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
@@ -30,6 +30,7 @@ export function WalletConnect({
 }: WalletConnectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { connectWallet, isConnecting, error, isConnected } = useWeb3()
+  const [connecting, setConnecting] = useState(false)
 
   // Close dialog if connected
   useEffect(() => {
@@ -40,11 +41,13 @@ export function WalletConnect({
 
   const handleConnect = async () => {
     try {
+      setConnecting(true)
       await connectWallet("Base")
       setIsOpen(false)
     } catch (error) {
       console.error(`Failed to connect with Base Smart Wallet:`, error)
-      // Error handling is done in the context
+    } finally {
+      setConnecting(false)
     }
   }
 
@@ -71,11 +74,20 @@ export function WalletConnect({
         <div className="grid gap-4 py-4">
           <Button
             onClick={handleConnect}
-            disabled={isConnecting}
+            disabled={connecting}
             className="flex items-center justify-center bg-gradient-to-r from-game-primary to-game-secondary"
           >
-            <img src="/placeholder.svg?height=24&width=24" alt="Base" className="mr-2 h-6 w-6" />
-            {isConnecting ? "Connecting..." : "Base Smart Wallet"}
+            {connecting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <img src="/placeholder.svg?height=24&width=24" alt="Base" className="mr-2 h-6 w-6" />
+                Base Smart Wallet
+              </>
+            )}
           </Button>
 
           <div className="text-center text-sm text-gray-500 mt-2">
