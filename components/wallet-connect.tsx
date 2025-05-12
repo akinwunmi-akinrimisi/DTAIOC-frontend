@@ -10,10 +10,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Wallet, ShieldCheck, AlertCircle } from "lucide-react"
+import { Wallet } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { BaseLogo } from "@/components/base-logo"
+import { AlertCircle } from "lucide-react"
 
 interface WalletConnectProps {
   buttonText?: string
@@ -38,11 +38,12 @@ export function WalletConnect({
     }
   }, [isConnected])
 
-  const handleConnect = async (type: "MetaMask" | "Safe" | "WalletConnect" | "Coinbase" | "Base") => {
+  const handleConnect = async () => {
     try {
-      await connectWallet(type)
+      await connectWallet("Base")
+      setIsOpen(false)
     } catch (error) {
-      console.error(`Failed to connect with ${type}:`, error)
+      console.error(`Failed to connect with Base Smart Wallet:`, error)
       // Error handling is done in the context
     }
   }
@@ -56,8 +57,8 @@ export function WalletConnect({
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connect Wallet</DialogTitle>
-          <DialogDescription>Choose a wallet to connect to DTriviaAIOnChain</DialogDescription>
+          <DialogTitle>Connect Smart Wallet</DialogTitle>
+          <DialogDescription>Connect your Base Smart Wallet to DTriviaAIOnChain</DialogDescription>
         </DialogHeader>
 
         {error && (
@@ -69,60 +70,23 @@ export function WalletConnect({
 
         <div className="grid gap-4 py-4">
           <Button
-            onClick={() => handleConnect("Base")}
+            onClick={handleConnect}
             disabled={isConnecting}
-            className="flex items-center justify-center bg-gradient-to-r from-[#0052FF] to-[#5299FF] hover:from-[#0052FF] hover:to-[#5299FF] hover:opacity-90"
+            className="flex items-center justify-center bg-gradient-to-r from-game-primary to-game-secondary"
           >
-            <BaseLogo className="mr-2 h-6 w-6" />
-            {isConnecting ? "Connecting..." : "Base Smart Wallet (Recommended)"}
-          </Button>
-
-          <Button
-            onClick={() => handleConnect("MetaMask")}
-            disabled={isConnecting}
-            className="flex items-center justify-center"
-          >
-            <img src="/placeholder.svg?height=24&width=24" alt="MetaMask" className="mr-2 h-6 w-6" />
-            {isConnecting ? "Connecting..." : "MetaMask"}
-          </Button>
-
-          <Button
-            onClick={() => handleConnect("Safe")}
-            disabled={isConnecting}
-            variant="outline"
-            className="flex items-center justify-center"
-          >
-            <ShieldCheck className="mr-2 h-5 w-5" />
-            {isConnecting ? "Connecting..." : "Safe Wallet"}
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Coming Soon</span>
-            </div>
-          </div>
-
-          <Button disabled={true} variant="outline" className="flex items-center justify-center opacity-60">
-            <img src="/placeholder.svg?height=24&width=24" alt="WalletConnect" className="mr-2 h-6 w-6" />
-            WalletConnect (Coming Soon)
-          </Button>
-          <Button disabled={true} variant="outline" className="flex items-center justify-center opacity-60">
-            <img src="/placeholder.svg?height=24&width=24" alt="Coinbase" className="mr-2 h-6 w-6" />
-            Coinbase Wallet (Coming Soon)
+            <img src="/placeholder.svg?height=24&width=24" alt="Base" className="mr-2 h-6 w-6" />
+            {isConnecting ? "Connecting..." : "Base Smart Wallet"}
           </Button>
 
           <div className="text-center text-sm text-gray-500 mt-2">
-            New to Web3?{" "}
+            <p>Base Smart Wallet provides a seamless Web3 experience with improved security and usability.</p>
             <a
               href="https://docs.base.org/tools/smart-wallets"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
             >
-              Learn about Smart Wallets
+              Learn more about Smart Wallets
             </a>
           </div>
         </div>

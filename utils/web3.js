@@ -9,6 +9,8 @@ import DTAIOCStakingABI from "../abis/DTAIOCStaking.json"
 import DTAIOCNFTABI from "../abis/DTAIOCNFT.json"
 import IBasenameResolverABI from "../abis/IBasenameResolver.json"
 
+import { connectBaseSmartWallet } from "./web3-smart-wallets"
+
 /**
  * Calculate the namehash of a domain name
  * @param {string} name - Domain name (e.g., "user.base.eth")
@@ -422,4 +424,7 @@ export default {
   hasSufficientBalance,
   getPlayerData,
   getGameData,
+  connectBaseSmartWallet,
 }
+
+export { connectBaseSmartWallet }

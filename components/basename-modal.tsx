@@ -17,32 +17,22 @@ import { Twitter, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useWeb3 } from "@/contexts/web3-context"
 import { linkBasename } from "@/utils/api"
-import { registerBasename } from "@/utils/base-smart-wallet"
 
 interface BasenameModalProps {
   onClose: () => void
 }
 
 export function BasenameModal({ onClose }: BasenameModalProps) {
-  const { address, setBasename, walletType } = useWeb3()
+  const { address, setBasename } = useWeb3()
   const [twitterUsername, setTwitterUsername] = useState("")
-  const [username, setUsername] = useState("")
   const [isLinking, setIsLinking] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
 
-  // Determine if we're using Base Smart Wallet
-  const isBaseSmartWallet = walletType === "Base"
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (isBaseSmartWallet && !username) {
-      setError("Please enter a username for your Basename")
-      return
-    }
-
-    if (!isBaseSmartWallet && !twitterUsername) {
+    if (!twitterUsername) {
       setError("Please enter your Twitter username")
       return
     }
@@ -56,30 +46,21 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
     setError("")
 
     try {
-      if (isBaseSmartWallet) {
-        // Register basename directly with Base Smart Wallet
-        const result = await registerBasename(address, username)
-        if (result.success) {
-          setBasename(result.basename)
-          setSuccess(true)
-        }
-      } else {
-        // Clean up Twitter username (remove @ if present)
-        const cleanUsername = twitterUsername.startsWith("@") ? twitterUsername.substring(1) : twitterUsername
+      // Clean up Twitter username (remove @ if present)
+      const cleanUsername = twitterUsername.startsWith("@") ? twitterUsername.substring(1) : twitterUsername
 
-        // Call API to link basename
-        const response = await linkBasename({
-          address,
-          twitterUsername: cleanUsername,
-        })
+      // Call API to link basename
+      const response = await linkBasename({
+        address,
+        twitterUsername: cleanUsername,
+      })
 
-        // Update basename in context
-        if (response.basename) {
-          setBasename(response.basename)
-        }
-
-        setSuccess(true)
+      // Update basename in context
+      if (response.basename) {
+        setBasename(response.basename)
       }
+
+      setSuccess(true)
 
       // Close modal after showing success message
       setTimeout(() => {
@@ -99,9 +80,8 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
         <DialogHeader>
           <DialogTitle>Link Your Basename</DialogTitle>
           <DialogDescription>
-            {isBaseSmartWallet
-              ? "Choose a username for your Basename. Your Basename will be used to identify you on leaderboards and in games."
-              : "Link your Twitter username to a Basename for a better experience. Your Basename will be used to identify you on leaderboards and in games."}
+            Link your Twitter username to a Basename for a better experience. Your Basename will be used to identify you
+            on leaderboards and in games.
           </DialogDescription>
         </DialogHeader>
 
@@ -114,44 +94,27 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
-              {isBaseSmartWallet ? (
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="username" className="text-sm font-medium">
-                    Choose a Username
-                  </label>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="twitter-username" className="text-sm font-medium">
+                  Twitter Username
+                </label>
+                <div className="flex items-center">
+                  <Twitter className="mr-2 h-5 w-5 text-[#1DA1F2]" />
                   <Input
-                    id="username"
-                    placeholder="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="twitter-username"
+                    placeholder="@username"
+                    value={twitterUsername}
+                    onChange={(e) => setTwitterUsername(e.target.value)}
                     className="flex-1"
                   />
-                  <p className="text-xs text-gray-500">Your basename will be {username || "username"}.base.eth</p>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="twitter-username" className="text-sm font-medium">
-                    Twitter Username
-                  </label>
-                  <div className="flex items-center">
-                    <Twitter className="mr-2 h-5 w-5 text-[#1DA1F2]" />
-                    <Input
-                      id="twitter-username"
-                      placeholder="@username"
-                      value={twitterUsername}
-                      onChange={(e) => setTwitterUsername(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <Alert variant="destructive" className="mt-2">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+                {error && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
 
               <div className="bg-blue-50 p-3 rounded-md">
                 <h4 className="text-sm font-medium text-blue-800">What is a Basename?</h4>
