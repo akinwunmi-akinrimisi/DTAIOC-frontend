@@ -1,4 +1,7 @@
 {
+  "_format": "hh-sol-artifact-1",
+  "contractName": "DTAIOCNFT",
+  "sourceName": "contracts/DTAIOCNFT.sol",
   "abi": [
     {
       "inputs": [],

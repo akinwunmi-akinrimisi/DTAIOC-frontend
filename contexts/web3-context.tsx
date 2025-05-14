@@ -1,175 +1,190 @@
 "use client"
 
+import type React from "react"
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { initWeb3, getTokenBalance } from "@/utils/web3"
-import { connectBaseSmartWallet } from "@/utils/web3-smart-wallets"
+import {
+  connectBaseSmartWallet,
+  disconnectBaseSmartWallet,
+  isWalletConnected,
+  getCurrentAddress,
+  setupAccountChangeListener,
+  setupChainChangeListener,
+  switchToBaseNetwork,
+} from "../utils/web3-smart-wallets"
+import { getTokenBalance } from "../utils/web3"
 
 interface Web3ContextType {
   address: string | null
-  basename: string | null
-  walletType: "MetaMask" | "Safe" | "WalletConnect" | "Coinbase" | "Base" | null
+  walletClient: any | null
+  provider: any | null
   isConnected: boolean
   isConnecting: boolean
-  tokenBalance: string | null
+  tokenBalance: string
   error: string | null
-  connectWallet: (type: "MetaMask" | "Safe" | "WalletConnect" | "Coinbase" | "Base") => Promise<void>
-  disconnectWallet: () => void
-  setBasename: (basename: string) => void
+  connectWallet: () => Promise<void>
+  disconnectWallet: () => Promise<void>
   refreshBalance: () => Promise<void>
 }
 
-const Web3Context = createContext<Web3ContextType | undefined>(undefined)
+const Web3Context = createContext<Web3ContextType>({
+  address: null,
+  walletClient: null,
+  provider: null,
+  isConnected: false,
+  isConnecting: false,
+  tokenBalance: "0",
+  error: null,
+  connectWallet: async () => {},
+  disconnectWallet: async () => {},
+  refreshBalance: async () => {},
+})
 
-export function Web3Provider({ children }: { children: ReactNode }) {
+export const useWeb3 = () => useContext(Web3Context)
+
+interface Web3ProviderProps {
+  children: ReactNode
+}
+
+export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   const [address, setAddress] = useState<string | null>(null)
-  const [basename, setBasenameState] = useState<string | null>(null)
-  const [walletType, setWalletType] = useState<"MetaMask" | "Safe" | "WalletConnect" | "Coinbase" | "Base" | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [tokenBalance, setTokenBalance] = useState<string | null>(null)
+  const [walletClient, setWalletClient] = useState<any | null>(null)
+  const [provider, setProvider] = useState<any | null>(null)
+  const [isConnected, setIsConnected] = useState<boolean>(false)
+  const [isConnecting, setIsConnecting] = useState<boolean>(false)
+  const [tokenBalance, setTokenBalance] = useState<string>("0")
   const [error, setError] = useState<string | null>(null)
-  const [walletClient, setWalletClient] = useState<any>(null)
 
-  // Initialize from localStorage on mount
+  // Initialize web3 on component mount
   useEffect(() => {
-    const storedWalletData = localStorage.getItem("walletData")
-    if (storedWalletData) {
+    const initWeb3 = async () => {
       try {
-        const { address, basename, walletType } = JSON.parse(storedWalletData)
-        setAddress(address)
-        setBasenameState(basename)
-        setWalletType(walletType)
-        setIsConnected(true)
+        const connected = await isWalletConnected()
+        if (connected) {
+          const currentAddress = await getCurrentAddress()
+          if (currentAddress) {
+            setAddress(currentAddress)
+            setIsConnected(true)
 
-        // Initialize Web3 and fetch balance
-        if (window.ethereum) {
-          initWeb3(window.ethereum).then(() => {
-            refreshBalance()
-          })
+            // Fetch token balance
+            const balance = await getTokenBalance(currentAddress)
+            setTokenBalance(balance)
+          }
         }
       } catch (err) {
-        console.error("Failed to restore wallet connection:", err)
-        localStorage.removeItem("walletData")
+        console.error("Error initializing web3:", err)
+        setError("Failed to initialize web3 connection")
       }
     }
+
+    initWeb3()
   }, [])
 
-  // Connect wallet
-  const connectWallet = async (type: "MetaMask" | "Safe" | "WalletConnect" | "Coinbase" | "Base") => {
+  // Set up account change listener
+  useEffect(() => {
+    const cleanup = setupAccountChangeListener(async (newAddress) => {
+      setAddress(newAddress)
+      setIsConnected(!!newAddress)
+
+      if (newAddress) {
+        // Fetch token balance for new address
+        const balance = await getTokenBalance(newAddress)
+        setTokenBalance(balance)
+      } else {
+        setTokenBalance("0")
+      }
+    })
+
+    return cleanup
+  }, [])
+
+  // Set up chain change listener
+  useEffect(() => {
+    const cleanup = setupChainChangeListener(() => {
+      // Reload the page on chain change
+      window.location.reload()
+    })
+
+    return cleanup
+  }, [])
+
+  // Connect wallet function
+  const connectWallet = async () => {
     setIsConnecting(true)
     setError(null)
 
     try {
-      let walletData
-
-      // Connect based on wallet type
-      if (type === "Base") {
-        if (!window.ethereum) {
-          throw new Error("No Ethereum provider found. Please install a wallet extension.")
-        }
-
-        walletData = await connectBaseSmartWallet(window.ethereum)
-        setWalletClient(walletData.walletClient)
-      } else if (type === "MetaMask") {
-        throw new Error("MetaMask connection not implemented yet")
-      } else if (type === "WalletConnect") {
-        throw new Error("WalletConnect connection not implemented yet")
-      } else if (type === "Coinbase") {
-        throw new Error("Coinbase Wallet connection not implemented yet")
-      } else if (type === "Safe") {
-        throw new Error("Safe Wallet connection not implemented yet")
+      // First, ensure we're on the Base network
+      const switched = await switchToBaseNetwork()
+      if (!switched) {
+        throw new Error("Failed to switch to Base network")
       }
 
-      setAddress(walletData.address)
-      setWalletType(type)
+      // Connect to the wallet
+      const { address: walletAddress, walletClient: client, provider: walletProvider } = await connectBaseSmartWallet()
+
+      setAddress(walletAddress)
+      setWalletClient(client)
+      setProvider(walletProvider)
       setIsConnected(true)
 
-      // Save to localStorage
-      localStorage.setItem(
-        "walletData",
-        JSON.stringify({
-          address: walletData.address,
-          basename,
-          walletType: type,
-        }),
-      )
-
-      // Initialize Web3 with the provider
-      await initWeb3(window.ethereum)
-
       // Fetch token balance
-      await refreshBalance()
-    } catch (err) {
-      console.error("Wallet connection error:", err)
-      setError(err instanceof Error ? err.message : "Failed to connect wallet")
+      const balance = await getTokenBalance(walletAddress)
+      setTokenBalance(balance)
+
+      return { address: walletAddress, walletClient: client }
+    } catch (err: any) {
+      console.error("Error connecting wallet:", err)
+      setError(err.message || "Failed to connect wallet")
+      throw err
     } finally {
       setIsConnecting(false)
     }
   }
 
-  // Disconnect wallet
-  const disconnectWallet = () => {
-    setAddress(null)
-    setBasenameState(null)
-    setWalletType(null)
-    setIsConnected(false)
-    setTokenBalance(null)
-    setWalletClient(null)
-    localStorage.removeItem("walletData")
-  }
-
-  // Set basename and update localStorage
-  const setBasename = (newBasename: string) => {
-    setBasenameState(newBasename)
-
-    if (isConnected && address) {
-      localStorage.setItem(
-        "walletData",
-        JSON.stringify({
-          address,
-          basename: newBasename,
-          walletType,
-        }),
-      )
-    }
-  }
-
-  // Refresh token balance
-  const refreshBalance = async () => {
-    if (!address) return
-
+  // Disconnect wallet function
+  const disconnectWallet = async () => {
     try {
-      const balance = await getTokenBalance(address)
-      setTokenBalance(balance)
-    } catch (err) {
-      console.error("Failed to fetch token balance:", err)
-      // Don't set error state here to avoid disrupting the UI
+      await disconnectBaseSmartWallet()
+
+      setAddress(null)
+      setWalletClient(null)
+      setProvider(null)
+      setIsConnected(false)
+      setTokenBalance("0")
+
+      return true
+    } catch (err: any) {
+      console.error("Error disconnecting wallet:", err)
+      setError(err.message || "Failed to disconnect wallet")
+      return false
     }
   }
 
-  // Context value
+  // Refresh balance function
+  const refreshBalance = async () => {
+    if (address) {
+      try {
+        const balance = await getTokenBalance(address)
+        setTokenBalance(balance)
+      } catch (err: any) {
+        console.error("Error refreshing balance:", err)
+        setError(err.message || "Failed to refresh balance")
+      }
+    }
+  }
+
   const value = {
     address,
-    basename,
-    walletType,
+    walletClient,
+    provider,
     isConnected,
     isConnecting,
     tokenBalance,
     error,
     connectWallet,
     disconnectWallet,
-    setBasename,
     refreshBalance,
   }
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>
-}
-
-// Custom hook to use the Web3 context
-export function useWeb3() {
-  const context = useContext(Web3Context)
-  if (context === undefined) {
-    throw new Error("useWeb3 must be used within a Web3Provider")
-  }
-  return context
 }

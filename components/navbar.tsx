@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { WalletConnect } from "@/components/wallet-connect"
 import { BasenameModal } from "@/components/basename-modal"
-import { Menu, X, LogOut, Trophy, Gamepad2, Home, UserPlus } from "lucide-react"
+import { Menu, X, LogOut, Trophy, Gamepad2, Home, UserPlus, Code } from "lucide-react"
 import { useWeb3 } from "@/contexts/web3-context"
 import { useToast } from "@/components/ui/use-toast"
 import { usePathname } from "next/navigation"
@@ -98,6 +98,19 @@ export function Navbar() {
                 <div className="flex items-center space-x-1">
                   <Trophy className="h-4 w-4" />
                   <span>Leaderboard</span>
+                </div>
+              </Link>
+              <Link
+                href="/tools"
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 ${
+                  isActive("/tools")
+                    ? "bg-gradient-to-r from-game-primary/20 to-game-secondary/20 text-white"
+                    : "text-gray-300 hover:text-white hover:bg-game-dark-lighter"
+                }`}
+              >
+                <div className="flex items-center space-x-1">
+                  <Code className="h-4 w-4" />
+                  <span>Developer Tools</span>
                 </div>
               </Link>
             </div>
@@ -215,6 +228,19 @@ export function Navbar() {
               <div className="flex items-center space-x-2">
                 <Trophy className="h-5 w-5" />
                 <span>Leaderboard</span>
+              </div>
+            </Link>
+            <Link
+              href="/tools"
+              className={`block px-3 py-2 rounded-md text-base font-medium ${
+                isActive("/tools")
+                  ? "bg-gradient-to-r from-game-primary/20 to-game-secondary/20 text-white"
+                  : "text-gray-300 hover:text-white hover:bg-game-dark-lighter"
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <Code className="h-5 w-5" />
+                <span>Developer Tools</span>
               </div>
             </Link>
           </div>

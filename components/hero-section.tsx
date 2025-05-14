@@ -61,7 +61,7 @@ export function HeroSection() {
             {!isConnected ? (
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-300"></div>
-                <WalletConnect buttonText="Connect Wallet" buttonVariant="default" buttonSize="lg" fullWidth={true} />
+                <WalletConnect />
               </div>
             ) : (
               <Button

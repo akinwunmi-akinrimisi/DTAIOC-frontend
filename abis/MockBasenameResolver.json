@@ -1,5 +1,27 @@
 {
+  "_format": "hh-sol-artifact-1",
+  "contractName": "MockBasenameResolver",
+  "sourceName": "contracts/MockBasenameResolver.sol",
   "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "basenames",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
     {
       "inputs": [
         {
@@ -22,6 +44,25 @@
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "wallet",
+          "type": "address"
+        }
+      ],
+      "name": "resolve",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "bytes32",
           "name": "node",
           "type": "bytes32"
@@ -36,6 +77,24 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "wallet",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "basename",
+          "type": "string"
+        }
+      ],
+      "name": "setBasename",
+      "outputs": [],
+      "stateMutability": "nonpayable",
       "type": "function"
     },
     {

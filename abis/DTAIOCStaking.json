@@ -1,4 +1,7 @@
 {
+  "_format": "hh-sol-artifact-1",
+  "contractName": "DTAIOCStaking",
+  "sourceName": "contracts/DTAIOCStaking.sol",
   "abi": [
     {
       "inputs": [
@@ -72,6 +75,11 @@
         {
           "internalType": "address",
           "name": "creator",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "platform",
           "type": "address"
         },
         {

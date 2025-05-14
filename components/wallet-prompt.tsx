@@ -1,113 +1,78 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Wallet, Loader2, AlertCircle } from "lucide-react"
+import { useState } from "react"
 import { useWeb3 } from "@/contexts/web3-context"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { Wallet, X, Loader2 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 
 interface WalletPromptProps {
-  isOpen: boolean
-  onClose: () => void
+  message?: string
+  onClose?: () => void
 }
 
-export function WalletPrompt({ isOpen, onClose }: WalletPromptProps) {
-  const { isConnected, connectWallet, isConnecting, error } = useWeb3()
-  const [connecting, setConnecting] = useState(false)
-  const [localError, setLocalError] = useState<string | null>(null)
-
-  // Close the prompt if the user connects their wallet
-  useEffect(() => {
-    if (isConnected) {
-      onClose()
-    }
-  }, [isConnected, onClose])
+export function WalletPrompt({ message, onClose }: WalletPromptProps) {
+  const { connectWallet, isConnecting } = useWeb3()
+  const [isOpen, setIsOpen] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const handleConnect = async () => {
     try {
-      setConnecting(true)
-      setLocalError(null)
-      await connectWallet("Base")
-      onClose()
-    } catch (error) {
-      console.error("Failed to connect wallet:", error)
-      setLocalError(error instanceof Error ? error.message : "Failed to connect wallet")
-    } finally {
-      setConnecting(false)
+      setError(null)
+      await connectWallet()
+      handleClose()
+    } catch (err: any) {
+      setError(err.message || "Failed to connect wallet")
     }
   }
 
+  const handleClose = () => {
+    setIsOpen(false)
+    if (onClose) onClose()
+  }
+
   return (
-    <Dialog open={isOpen && !isConnected} onOpenChange={onClose}>
-      <DialogContent className="bg-game-dark-card border border-game-primary/50 shadow-lg shadow-game-primary/20">
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open)
+        if (!open && onClose) onClose()
+      }}
+    >
+      <DialogContent className="bg-game-dark-card border-game-dark-border text-white sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-gray-200 text-xl">Connect Your Wallet</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-white">Connect Your Wallet</DialogTitle>
           <DialogDescription className="text-gray-300">
-            You need to connect your wallet to access this feature.
+            {message || "Please connect your wallet to access this feature."}
           </DialogDescription>
         </DialogHeader>
-
-        {(error || localError) && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error || localError}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur-md opacity-30"></div>
-          <div className="relative bg-game-dark-lighter border border-game-dark-border rounded-lg p-6">
-            <p className="text-gray-200 mb-4">Connecting your wallet allows you to:</p>
-            <ul className="space-y-2 text-gray-300 mb-6">
-              <li className="flex items-center">
-                <div className="w-5 h-5 rounded-full bg-game-primary/20 flex items-center justify-center mr-2">
-                  <span className="text-game-primary text-xs">✓</span>
-                </div>
-                <span>Join and create trivia games</span>
-              </li>
-              <li className="flex items-center">
-                <div className="w-5 h-5 rounded-full bg-game-primary/20 flex items-center justify-center mr-2">
-                  <span className="text-game-primary text-xs">✓</span>
-                </div>
-                <span>Stake tokens and earn rewards</span>
-              </li>
-              <li className="flex items-center">
-                <div className="w-5 h-5 rounded-full bg-game-primary/20 flex items-center justify-center mr-2">
-                  <span className="text-game-primary text-xs">✓</span>
-                </div>
-                <span>Win exclusive NFTs</span>
-              </li>
-              <li className="flex items-center">
-                <div className="w-5 h-5 rounded-full bg-game-primary/20 flex items-center justify-center mr-2">
-                  <span className="text-game-primary text-xs">✓</span>
-                </div>
-                <span>Track your progress on leaderboards</span>
-              </li>
-            </ul>
-
-            <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-70 group-hover:opacity-100 transition duration-300"></div>
-              <Button
-                onClick={handleConnect}
-                disabled={connecting}
-                className="w-full bg-gradient-to-r from-game-primary to-game-secondary hover:shadow-neon text-white relative"
-              >
-                {connecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Wallet className="mr-2 h-4 w-4" />
-                    Connect Smart Wallet
-                  </>
-                )}
-              </Button>
-            </div>
+        <div className="flex flex-col gap-4 py-4">
+          <div className="relative group">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-game-primary to-game-secondary rounded-lg blur opacity-50 group-hover:opacity-100 transition duration-300"></div>
+            <Button
+              onClick={handleConnect}
+              disabled={isConnecting}
+              className="w-full bg-gradient-to-r from-game-primary to-game-secondary hover:shadow-neon text-white relative"
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  Connect Wallet
+                </>
+              )}
+            </Button>
           </div>
+          {error && <p className="text-red-500 text-sm">{error}</p>}
         </div>
+        <Button variant="ghost" className="absolute top-2 right-2 text-gray-400 hover:text-white" onClick={handleClose}>
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
       </DialogContent>
     </Dialog>
   )

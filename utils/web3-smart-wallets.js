@@ -1,99 +1,145 @@
-// Smart wallet integration utilities
-import { createPublicClient, http, createWalletClient, custom } from "viem"
-import { baseSepolia } from "viem/chains"
+import { createWalletClient, custom } from "viem"
+import { base } from "viem/chains"
 
-// Initialize Base Smart Wallet
-export const initBaseSmartWallet = async (provider) => {
+// Base RPC URL from environment variables
+const BASE_RPC_URL = process.env.BASE_RPC_URL || process.env.NEXT_PUBLIC_BASE_RPC_URL
+
+// Connect to a Base smart wallet
+export const connectBaseSmartWallet = async () => {
   try {
-    if (!provider) {
-      throw new Error("No provider available. Please install a wallet extension.")
-    }
+    // Check if ethereum is available in the window object
+    if (typeof window !== "undefined" && window.ethereum) {
+      // Request account access
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
 
-    // Create a public client for Base Sepolia
-    const publicClient = createPublicClient({
-      chain: baseSepolia,
-      transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || "https://sepolia.base.org"),
-    })
+      if (accounts.length === 0) {
+        throw new Error("No accounts found. Please connect your wallet.")
+      }
 
-    // Create a wallet client using the provider
-    const walletClient = createWalletClient({
-      chain: baseSepolia,
-      transport: custom(provider),
-    })
+      // Create a wallet client using the provider
+      const walletClient = createWalletClient({
+        chain: base,
+        transport: custom(window.ethereum),
+      })
 
-    // Get the wallet address
-    const [address] = await walletClient.getAddresses()
+      // Get the connected address
+      const [address] = await walletClient.getAddresses()
 
-    return {
-      publicClient,
-      walletClient,
-      address,
+      return {
+        address,
+        walletClient,
+        provider: window.ethereum,
+      }
+    } else {
+      throw new Error("Ethereum provider not found. Please install a wallet extension like MetaMask.")
     }
   } catch (error) {
-    console.error("Failed to initialize Base Smart Wallet:", error)
+    console.error("Error connecting to Base smart wallet:", error)
     throw error
   }
 }
 
-// Connect to Base Smart Wallet
-export const connectBaseSmartWallet = async (provider) => {
+// Disconnect from a Base smart wallet
+export const disconnectBaseSmartWallet = async () => {
+  // Most wallet providers don't have a disconnect method
+  // We can just clear our local state
+  return true
+}
+
+// Check if a wallet is connected
+export const isWalletConnected = async () => {
   try {
-    if (!provider) {
-      throw new Error("No provider available. Please install a wallet extension.")
+    if (typeof window !== "undefined" && window.ethereum) {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" })
+      return accounts.length > 0
     }
+    return false
+  } catch (error) {
+    console.error("Error checking wallet connection:", error)
+    return false
+  }
+}
 
-    // Request account access
-    await provider.request({ method: "eth_requestAccounts" })
+// Get the current connected address
+export const getCurrentAddress = async () => {
+  try {
+    if (typeof window !== "undefined" && window.ethereum) {
+      const accounts = await window.ethereum.request({ method: "eth_accounts" })
+      return accounts.length > 0 ? accounts[0] : null
+    }
+    return null
+  } catch (error) {
+    console.error("Error getting current address:", error)
+    return null
+  }
+}
 
-    // Create a wallet client
-    const walletClient = createWalletClient({
-      chain: baseSepolia,
-      transport: custom(provider),
+// Listen for account changes
+export const setupAccountChangeListener = (callback) => {
+  if (typeof window !== "undefined" && window.ethereum) {
+    window.ethereum.on("accountsChanged", (accounts) => {
+      callback(accounts.length > 0 ? accounts[0] : null)
     })
 
-    // Get the wallet address
-    const [address] = await walletClient.getAddresses()
-
-    // Get the chain ID
-    const chainId = await walletClient.getChainId()
-
-    return {
-      type: "Base",
-      address,
-      networkId: chainId,
-      walletClient,
+    return () => {
+      window.ethereum.removeListener("accountsChanged", callback)
     }
-  } catch (error) {
-    console.error("Base Smart Wallet connection error:", error)
-    throw new Error(`Failed to connect to Base Smart Wallet: ${error.message}`)
   }
+  return () => {}
 }
 
-// Connect to WalletConnect
-export const connectWalletConnect = async () => {
+// Listen for chain changes
+export const setupChainChangeListener = (callback) => {
+  if (typeof window !== "undefined" && window.ethereum) {
+    window.ethereum.on("chainChanged", (chainId) => {
+      callback(chainId)
+    })
+
+    return () => {
+      window.ethereum.removeListener("chainChanged", callback)
+    }
+  }
+  return () => {}
+}
+
+// Switch to Base network
+export const switchToBaseNetwork = async () => {
   try {
-    // This would use the WalletConnect SDK in a real implementation
-    throw new Error("WalletConnect integration not fully implemented yet")
+    if (typeof window !== "undefined" && window.ethereum) {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x2105" }], // Base mainnet chain ID
+      })
+      return true
+    }
+    return false
   } catch (error) {
-    console.error("WalletConnect connection error:", error)
-    throw new Error(`Failed to connect to WalletConnect: ${error.message}`)
+    // If the error code is 4902, the chain hasn't been added to the wallet
+    if (error.code === 4902) {
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: "0x2105",
+              chainName: "Base",
+              nativeCurrency: {
+                name: "Ethereum",
+                symbol: "ETH",
+                decimals: 18,
+              },
+              rpcUrls: [BASE_RPC_URL],
+              blockExplorerUrls: ["https://basescan.org/"],
+            },
+          ],
+        })
+        return true
+      } catch (addError) {
+        console.error("Error adding Base network:", addError)
+        return false
+      }
+    }
+    console.error("Error switching to Base network:", error)
+    return false
   }
-}
-
-// Connect to Coinbase Wallet
-export const connectCoinbaseWallet = async () => {
-  try {
-    // This would use the Coinbase Wallet SDK in a real implementation
-    throw new Error("Coinbase Wallet integration not fully implemented yet")
-  } catch (error) {
-    console.error("Coinbase Wallet connection error:", error)
-    throw new Error(`Failed to connect to Coinbase Wallet: ${error.message}`)
-  }
-}
-
-export default {
-  initBaseSmartWallet,
-  connectBaseSmartWallet,
-  connectWalletConnect,
-  connectCoinbaseWallet,
 }
