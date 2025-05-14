@@ -11,10 +11,11 @@ import {
   setupChainChangeListener,
   switchToBaseNetwork,
 } from "../utils/web3-smart-wallets"
-import { getTokenBalance } from "../utils/web3"
+import { getTokenBalance, getBasenameForAddress } from "../utils/web3"
 
 interface Web3ContextType {
   address: string | null
+  basename: string | null
   walletClient: any | null
   provider: any | null
   isConnected: boolean
@@ -24,10 +25,12 @@ interface Web3ContextType {
   connectWallet: () => Promise<void>
   disconnectWallet: () => Promise<void>
   refreshBalance: () => Promise<void>
+  setBasename: (basename: string) => void
 }
 
 const Web3Context = createContext<Web3ContextType>({
   address: null,
+  basename: null,
   walletClient: null,
   provider: null,
   isConnected: false,
@@ -37,6 +40,7 @@ const Web3Context = createContext<Web3ContextType>({
   connectWallet: async () => {},
   disconnectWallet: async () => {},
   refreshBalance: async () => {},
+  setBasename: () => {},
 })
 
 export const useWeb3 = () => useContext(Web3Context)
@@ -47,6 +51,7 @@ interface Web3ProviderProps {
 
 export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   const [address, setAddress] = useState<string | null>(null)
+  const [basename, setBasenameState] = useState<string | null>(null)
   const [walletClient, setWalletClient] = useState<any | null>(null)
   const [provider, setProvider] = useState<any | null>(null)
   const [isConnected, setIsConnected] = useState<boolean>(false)
@@ -68,6 +73,16 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
             // Fetch token balance
             const balance = await getTokenBalance(currentAddress)
             setTokenBalance(balance)
+
+            // Fetch basename
+            try {
+              const basename = await getBasenameForAddress(currentAddress)
+              if (basename) {
+                setBasenameState(basename)
+              }
+            } catch (err) {
+              console.error("Error fetching basename:", err)
+            }
           }
         }
       } catch (err) {
@@ -89,8 +104,22 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         // Fetch token balance for new address
         const balance = await getTokenBalance(newAddress)
         setTokenBalance(balance)
+
+        // Fetch basename for new address
+        try {
+          const basename = await getBasenameForAddress(newAddress)
+          if (basename) {
+            setBasenameState(basename)
+          } else {
+            setBasenameState(null)
+          }
+        } catch (err) {
+          console.error("Error fetching basename:", err)
+          setBasenameState(null)
+        }
       } else {
         setTokenBalance("0")
+        setBasenameState(null)
       }
     })
 
@@ -131,6 +160,16 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       const balance = await getTokenBalance(walletAddress)
       setTokenBalance(balance)
 
+      // Fetch basename
+      try {
+        const basename = await getBasenameForAddress(walletAddress)
+        if (basename) {
+          setBasenameState(basename)
+        }
+      } catch (err) {
+        console.error("Error fetching basename:", err)
+      }
+
       return { address: walletAddress, walletClient: client }
     } catch (err: any) {
       console.error("Error connecting wallet:", err)
@@ -147,6 +186,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       await disconnectBaseSmartWallet()
 
       setAddress(null)
+      setBasenameState(null)
       setWalletClient(null)
       setProvider(null)
       setIsConnected(false)
@@ -166,6 +206,16 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       try {
         const balance = await getTokenBalance(address)
         setTokenBalance(balance)
+
+        // Also refresh basename
+        try {
+          const basename = await getBasenameForAddress(address)
+          if (basename) {
+            setBasenameState(basename)
+          }
+        } catch (err) {
+          console.error("Error refreshing basename:", err)
+        }
       } catch (err: any) {
         console.error("Error refreshing balance:", err)
         setError(err.message || "Failed to refresh balance")
@@ -173,8 +223,14 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     }
   }
 
+  // Set basename function
+  const setBasename = (newBasename: string) => {
+    setBasenameState(newBasename)
+  }
+
   const value = {
     address,
+    basename,
     walletClient,
     provider,
     isConnected,
@@ -184,6 +240,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     connectWallet,
     disconnectWallet,
     refreshBalance,
+    setBasename,
   }
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>

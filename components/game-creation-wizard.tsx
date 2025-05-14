@@ -11,9 +11,11 @@ import { Twitter, ArrowLeft, ArrowRight, Check, Loader2, AlertCircle } from "luc
 import { useRouter } from "next/navigation"
 import { useWeb3 } from "@/contexts/web3-context"
 import { generateQuestions, createGame as apiCreateGame } from "@/utils/api"
-import { createGame as web3CreateGame } from "@/utils/web3"
+import { createGame as web3CreateGame, calculateNamehash } from "@/utils/web3"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useToast } from "@/components/ui/use-toast"
+import { BasenameModal } from "./basename-modal"
+import { useWalletClient } from "wagmi"
 
 interface Question {
   id: string
@@ -25,8 +27,9 @@ interface Question {
 
 export function GameCreationWizard() {
   const router = useRouter()
-  const { address, basename } = useWeb3()
+  const { address, basename, isConnected } = useWeb3()
   const { toast } = useToast()
+  const { data: walletClient } = useWalletClient()
 
   const [currentStep, setCurrentStep] = useState(1)
   const [twitterUsername, setTwitterUsername] = useState("")
@@ -38,17 +41,25 @@ export function GameCreationWizard() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState("")
   const [transactionHash, setTransactionHash] = useState("")
+  const [showBasenameModal, setShowBasenameModal] = useState(false)
 
-  // Check if wallet is connected
+  // Check if wallet is connected and basename is set
   useEffect(() => {
-    if (!address) {
+    if (!isConnected) {
       toast({
         title: "Wallet Not Connected",
         description: "Please connect your wallet to create a game.",
         variant: "destructive",
       })
+    } else if (!basename) {
+      toast({
+        title: "Basename Not Set",
+        description: "Please set a basename to create a game.",
+        variant: "destructive",
+      })
+      setShowBasenameModal(true)
     }
-  }, [address, toast])
+  }, [isConnected, basename, toast])
 
   const handleTwitterSubmit = async () => {
     if (!twitterUsername) {
@@ -56,8 +67,14 @@ export function GameCreationWizard() {
       return
     }
 
-    if (!address || !basename) {
-      setError("Wallet not connected or basename not set")
+    if (!isConnected || !address) {
+      setError("Wallet not connected. Please connect your wallet first.")
+      return
+    }
+
+    if (!basename) {
+      setError("Basename not set. Please set your basename first.")
+      setShowBasenameModal(true)
       return
     }
 
@@ -108,8 +125,14 @@ export function GameCreationWizard() {
 
   // Update the handleCreateGame function to handle the namehash calculation
   const handleCreateGame = async () => {
-    if (!address || !basename) {
-      setError("Wallet not connected or basename not set")
+    if (!isConnected || !address) {
+      setError("Wallet not connected. Please connect your wallet first.")
+      return
+    }
+
+    if (!basename) {
+      setError("Basename not set. Please set your basename first.")
+      setShowBasenameModal(true)
       return
     }
 
@@ -122,6 +145,12 @@ export function GameCreationWizard() {
     setError("")
 
     try {
+      // Calculate namehash for the basename
+      const basenameNode = await calculateNamehash(basename)
+      if (!basenameNode) {
+        throw new Error("Failed to calculate namehash for basename")
+      }
+
       // 1. Call API to create game and get question hashes
       const gameData = await apiCreateGame({
         twitterUsername,
@@ -139,18 +168,18 @@ export function GameCreationWizard() {
       console.log("Game data from API:", gameData)
 
       // 2. Call smart contract to create game
-      // Note: We're only passing the basename now, not the question hashes
-      const tx = await web3CreateGame(
-        address,
-        basename,
-        [], // Empty array for question hashes as they're not needed for this test
-        stakeAmount,
-        playerLimit,
-        Number.parseInt(duration) * 3600,
-      )
+      // For now, we're using empty question root hashes
+      const questionRootHashes = ["0x0", "0x0", "0x0"] // Replace with actual hashes from API when available
+      const gameDuration = Number.parseInt(duration) * 3600 // Convert hours to seconds
+
+      if (!walletClient) {
+        throw new Error("Wallet client not found")
+      }
+
+      const tx = await web3CreateGame(walletClient, basenameNode, questionRootHashes, gameDuration)
 
       // 3. Set transaction hash for reference
-      setTransactionHash(tx.transactionHash)
+      setTransactionHash(tx)
 
       // 4. Show success toast
       toast({
@@ -211,7 +240,11 @@ export function GameCreationWizard() {
             </Card>
 
             <div className="flex justify-end">
-              <Button onClick={handleTwitterSubmit} disabled={loading || !address} className="flex items-center">
+              <Button
+                onClick={handleTwitterSubmit}
+                disabled={loading || !isConnected || !basename}
+                className="flex items-center"
+              >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -448,6 +481,8 @@ export function GameCreationWizard() {
       </div>
 
       {renderStepContent()}
+
+      {showBasenameModal && <BasenameModal onClose={() => setShowBasenameModal(false)} />}
     </div>
   )
 }

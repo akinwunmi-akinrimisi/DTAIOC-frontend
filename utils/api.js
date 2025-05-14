@@ -310,23 +310,77 @@ export const getLeaderboard = async (gameId) => {
 export const linkBasename = async (data) => {
   if (MOCK_MODE) {
     console.log("Mock mode: Linking basename", data)
+
+    // In mock mode, just return a successful response with the basename
+    const mockBasename = `${data.twitterUsername}.base.eth`
+
+    // Store in localStorage for persistence
+    try {
+      const walletData = JSON.parse(localStorage.getItem("walletData") || "{}")
+      walletData.basename = mockBasename
+      localStorage.setItem("walletData", JSON.stringify(walletData))
+    } catch (err) {
+      console.error("Error storing basename in localStorage:", err)
+    }
+
     return {
       address: data.address,
       twitterUsername: data.twitterUsername,
-      basename: `${data.twitterUsername}.base.eth`,
+      basename: mockBasename,
     }
   }
 
   try {
-    // Initiate OAuth login
-    window.location.href = `${API_URL}/auth/login?username=${data.twitterUsername}`
-    // This will redirect to Twitter for authentication
-    // After authentication, the user will be redirected back to the callback URL
+    // In a real implementation, this would call the API to link the basename
+    const response = await api.post("/basenames/link", {
+      address: data.address,
+      twitterUsername: data.twitterUsername,
+    })
 
-    // Since this is a redirect, we don't return anything here
-    return new Promise(() => {}) // Never resolves since we're redirecting
+    return response.data
   } catch (error) {
     console.error("API link basename error:", error)
+    throw error
+  }
+}
+
+/**
+ * Create a new basename
+ * @param {Object} data - Basename data (address, basename)
+ * @returns {Promise<Object>} - Creation response
+ */
+export const createBasename = async (data) => {
+  if (MOCK_MODE) {
+    console.log("Mock mode: Creating basename", data)
+
+    // In mock mode, just return a successful response with the basename
+    const mockBasename = `${data.basename}.base.eth`
+
+    // Store in localStorage for persistence
+    try {
+      const walletData = JSON.parse(localStorage.getItem("walletData") || "{}")
+      walletData.basename = mockBasename
+      localStorage.setItem("walletData", JSON.stringify(walletData))
+    } catch (err) {
+      console.error("Error storing basename in localStorage:", err)
+    }
+
+    return {
+      address: data.address,
+      basename: mockBasename,
+    }
+  }
+
+  try {
+    // In a real implementation, this would call the API to create the basename
+    const response = await api.post("/basenames/create", {
+      address: data.address,
+      basename: data.basename,
+    })
+
+    return response.data
+  } catch (error) {
+    console.error("API create basename error:", error)
     throw error
   }
 }
@@ -369,12 +423,7 @@ export const generateQuestions = async (twitterUsername) => {
   }
 }
 
-/**
- * Create a new basename
- * @param {Object} data - Basename data (address, basename)
- * @returns {Promise<Object>} - Creation response
- */
-export const createBasename = async (data) => {
+export const createBasenameOld = async (data) => {
   if (MOCK_MODE) {
     console.log("Mock mode: Creating basename", data)
     return {

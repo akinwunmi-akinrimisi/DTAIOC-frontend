@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, http, custom, parseEther, formatEther } from "viem"
+import { createPublicClient, createWalletClient, http, custom, parseEther, formatEther, keccak256 } from "viem"
 import { base } from "viem/chains"
 import GameABI from "../abis/DTAIOCGame.json"
 import TokenABI from "../abis/DTAIOCToken.json"
@@ -419,23 +419,106 @@ export const setBasenameForAddress = async (walletClient, address, basename) => 
 
 /**
  * Calculate namehash for a basename
- * @param {string} basename - Basename
+ * @param {string} basename - Basename (e.g., "user.base.eth")
  * @returns {Promise<string>} - Namehash
  */
 export const calculateNamehash = async (basename) => {
-  try {
-    const resolverContract = await getBasenameResolverContract()
-    const hash = await publicClient.readContract({
-      ...resolverContract,
-      functionName: "namehash",
-      args: [basename],
-    })
+  if (!basename) return null
 
-    return hash
+  try {
+    // If we have a resolver contract, use it
+    if (BASENAME_RESOLVER_ADDRESS) {
+      const resolverContract = await getBasenameResolverContract()
+      const hash = await publicClient.readContract({
+        ...resolverContract,
+        functionName: "namehash",
+        args: [basename],
+      })
+      return hash
+    } else {
+      // Otherwise, calculate it locally
+      return calculateNamehashLocally(basename)
+    }
   } catch (error) {
     console.error("Error calculating namehash:", error)
-    return null
+    // Fallback to local calculation
+    return calculateNamehashLocally(basename)
   }
+}
+
+/**
+ * Calculate namehash locally
+ * @param {string} name - Domain name (e.g., "user.base.eth")
+ * @returns {string} - Namehash as a hex string
+ */
+function calculateNamehashLocally(name) {
+  if (!name || name === "") {
+    return "0x0000000000000000000000000000000000000000000000000000000000000000"
+  }
+
+  // Split the name by dots
+  const labels = name.split(".")
+
+  // Start with the zero hash
+  let result = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+  // Process the labels from right to left
+  for (let i = labels.length - 1; i >= 0; i--) {
+    // Hash the label
+    const labelHash = calculateKeccak256(new TextEncoder().encode(labels[i]))
+
+    // Concatenate and hash again
+    result = calculateKeccak256(concatenateHashes(result, labelHash))
+  }
+
+  return result
+}
+
+/**
+ * Concatenate two hashes
+ * @param {string} hash1 - First hash
+ * @param {string} hash2 - Second hash
+ * @returns {Uint8Array} - Concatenated hashes
+ */
+function concatenateHashes(hash1, hash2) {
+  // Convert hex strings to Uint8Array
+  const hash1Bytes = hexToBytes(hash1)
+  const hash2Bytes = typeof hash2 === "string" ? hexToBytes(hash2) : hash2
+
+  // Concatenate the arrays
+  const result = new Uint8Array(hash1Bytes.length + hash2Bytes.length)
+  result.set(hash1Bytes)
+  result.set(hash2Bytes, hash1Bytes.length)
+
+  return result
+}
+
+/**
+ * Convert hex string to bytes
+ * @param {string} hex - Hex string
+ * @returns {Uint8Array} - Bytes
+ */
+function hexToBytes(hex) {
+  if (hex.startsWith("0x")) {
+    hex = hex.slice(2)
+  }
+
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16)
+  }
+
+  return bytes
+}
+
+/**
+ * Keccak256 hash function
+ * @param {Uint8Array} data - Data to hash
+ * @returns {string} - Hash as a hex string
+ */
+function calculateKeccak256(data) {
+  // Use viem's keccak256 function
+  return keccak256(data)
 }
 
 export const mintTokens = async (walletClient, amount) => {

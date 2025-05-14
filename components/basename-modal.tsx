@@ -24,7 +24,7 @@ interface BasenameModalProps {
 }
 
 export function BasenameModal({ onClose }: BasenameModalProps) {
-  const { address, setBasename } = useWeb3()
+  const { address, walletClient, refreshBalance } = useWeb3()
   const [twitterUsername, setTwitterUsername] = useState("")
   const [desiredBasename, setDesiredBasename] = useState("")
   const [isLinking, setIsLinking] = useState(false)
@@ -59,12 +59,12 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
         twitterUsername: cleanUsername,
       })
 
-      // Update basename in context
-      if (response.basename) {
-        setBasename(response.basename)
-      }
-
       setSuccess(true)
+
+      // Refresh balance to update UI
+      if (refreshBalance) {
+        await refreshBalance()
+      }
 
       // Close modal after showing success message
       setTimeout(() => {
@@ -101,12 +101,12 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
         basename: desiredBasename,
       })
 
-      // Update basename in context
-      if (response.basename) {
-        setBasename(response.basename)
-      }
-
       setSuccess(true)
+
+      // Refresh balance to update UI
+      if (refreshBalance) {
+        await refreshBalance()
+      }
 
       // Close modal after showing success message
       setTimeout(() => {
