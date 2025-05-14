@@ -7,34 +7,33 @@ const BASE_RPC_URL = process.env.BASE_RPC_URL || process.env.NEXT_PUBLIC_BASE_RP
 // Connect to a Base smart wallet
 export const connectBaseSmartWallet = async () => {
   try {
-    // Check if ethereum is available in the window object
-    if (typeof window !== "undefined" && window.ethereum) {
-      // Request account access
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
+    // Check if window.ethereum is available
+    if (!window.ethereum) {
+      throw new Error("No Ethereum provider found. Please install a wallet like MetaMask.")
+    }
 
-      if (accounts.length === 0) {
-        throw new Error("No accounts found. Please connect your wallet.")
-      }
+    // Request account access
+    const accounts = await window.ethereum.request({ method: "eth_requestAccounts" })
 
-      // Create a wallet client using the provider
-      const walletClient = createWalletClient({
-        chain: base,
-        transport: custom(window.ethereum),
-      })
+    if (!accounts || accounts.length === 0) {
+      throw new Error("No accounts found. Please connect your wallet.")
+    }
 
-      // Get the connected address
-      const [address] = await walletClient.getAddresses()
+    const address = accounts[0]
 
-      return {
-        address,
-        walletClient,
-        provider: window.ethereum,
-      }
-    } else {
-      throw new Error("Ethereum provider not found. Please install a wallet extension like MetaMask.")
+    // Create a wallet client
+    const walletClient = createWalletClient({
+      chain: base,
+      transport: custom(window.ethereum),
+    })
+
+    return {
+      address,
+      walletClient,
+      provider: window.ethereum,
     }
   } catch (error) {
-    console.error("Error connecting to Base smart wallet:", error)
+    console.error("Error connecting wallet:", error)
     throw error
   }
 }

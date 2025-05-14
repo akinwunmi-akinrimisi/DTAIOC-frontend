@@ -13,18 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Twitter, AlertCircle, ExternalLink, ArrowRight } from "lucide-react"
+import { Twitter, AlertCircle, ExternalLink, ArrowRight, Check } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useWeb3 } from "@/contexts/web3-context"
 import { linkBasename, createBasename } from "@/utils/api"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { setBasenameForAddress } from "@/utils/web3"
 
 interface BasenameModalProps {
   onClose: () => void
 }
 
 export function BasenameModal({ onClose }: BasenameModalProps) {
-  const { address, walletClient, refreshBalance } = useWeb3()
+  const { address, walletClient, refreshBalance, setBasename: setContextBasename } = useWeb3()
   const [twitterUsername, setTwitterUsername] = useState("")
   const [desiredBasename, setDesiredBasename] = useState("")
   const [isLinking, setIsLinking] = useState(false)
@@ -58,6 +59,21 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
         address,
         twitterUsername: cleanUsername,
       })
+
+      if (response && response.basename) {
+        // Update basename in context
+        setContextBasename(response.basename)
+
+        // If we have a wallet client, also set it on-chain
+        if (walletClient) {
+          try {
+            await setBasenameForAddress(walletClient, address, response.basename)
+          } catch (err) {
+            console.error("Failed to set basename on-chain:", err)
+            // Continue anyway as we've set it in our context
+          }
+        }
+      }
 
       setSuccess(true)
 
@@ -101,6 +117,21 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
         basename: desiredBasename,
       })
 
+      if (response && response.basename) {
+        // Update basename in context
+        setContextBasename(response.basename)
+
+        // If we have a wallet client, also set it on-chain
+        if (walletClient) {
+          try {
+            await setBasenameForAddress(walletClient, address, response.basename)
+          } catch (err) {
+            console.error("Failed to set basename on-chain:", err)
+            // Continue anyway as we've set it in our context
+          }
+        }
+      }
+
       setSuccess(true)
 
       // Refresh balance to update UI
@@ -136,6 +167,7 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
 
         {success ? (
           <Alert className="bg-green-50 border-green-200">
+            <Check className="h-4 w-4 text-green-800" />
             <AlertDescription className="text-green-800">
               Basename successfully set! You're all set to play.
             </AlertDescription>

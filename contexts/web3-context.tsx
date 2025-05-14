@@ -26,6 +26,7 @@ interface Web3ContextType {
   disconnectWallet: () => Promise<void>
   refreshBalance: () => Promise<void>
   setBasename: (basename: string) => void
+  checkBasename: () => Promise<string | null>
 }
 
 const Web3Context = createContext<Web3ContextType>({
@@ -41,6 +42,7 @@ const Web3Context = createContext<Web3ContextType>({
   disconnectWallet: async () => {},
   refreshBalance: async () => {},
   setBasename: () => {},
+  checkBasename: async () => null,
 })
 
 export const useWeb3 = () => useContext(Web3Context)
@@ -48,6 +50,10 @@ export const useWeb3 = () => useContext(Web3Context)
 interface Web3ProviderProps {
   children: ReactNode
 }
+
+// Local storage keys
+const BASENAME_STORAGE_KEY = "dtaioc_basename"
+const ADDRESS_STORAGE_KEY = "dtaioc_address"
 
 export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   const [address, setAddress] = useState<string | null>(null)
@@ -63,26 +69,50 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   useEffect(() => {
     const initWeb3 = async () => {
       try {
-        const connected = await isWalletConnected()
-        if (connected) {
-          const currentAddress = await getCurrentAddress()
-          if (currentAddress) {
-            setAddress(currentAddress)
-            setIsConnected(true)
+        // Try to restore from localStorage first
+        const storedAddress = localStorage.getItem(ADDRESS_STORAGE_KEY)
+        const storedBasename = localStorage.getItem(BASENAME_STORAGE_KEY)
 
-            // Fetch token balance
-            const balance = await getTokenBalance(currentAddress)
-            setTokenBalance(balance)
+        if (storedAddress) {
+          setAddress(storedAddress)
 
-            // Fetch basename
-            try {
-              const basename = await getBasenameForAddress(currentAddress)
-              if (basename) {
-                setBasenameState(basename)
+          if (storedBasename) {
+            setBasenameState(storedBasename)
+          }
+
+          // Verify if the wallet is still connected
+          const connected = await isWalletConnected()
+          if (connected) {
+            const currentAddress = await getCurrentAddress()
+
+            if (currentAddress && currentAddress.toLowerCase() === storedAddress.toLowerCase()) {
+              setIsConnected(true)
+
+              // Fetch token balance
+              const balance = await getTokenBalance(currentAddress)
+              setTokenBalance(balance)
+
+              // If no stored basename, try to fetch it
+              if (!storedBasename) {
+                try {
+                  const basename = await getBasenameForAddress(currentAddress)
+                  if (basename) {
+                    setBasenameState(basename)
+                    localStorage.setItem(BASENAME_STORAGE_KEY, basename)
+                  }
+                } catch (err) {
+                  console.error("Error fetching basename:", err)
+                }
               }
-            } catch (err) {
-              console.error("Error fetching basename:", err)
+            } else {
+              // Address changed or not connected, clear storage
+              localStorage.removeItem(ADDRESS_STORAGE_KEY)
+              localStorage.removeItem(BASENAME_STORAGE_KEY)
             }
+          } else {
+            // Not connected, clear storage
+            localStorage.removeItem(ADDRESS_STORAGE_KEY)
+            localStorage.removeItem(BASENAME_STORAGE_KEY)
           }
         }
       } catch (err) {
@@ -101,6 +131,9 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       setIsConnected(!!newAddress)
 
       if (newAddress) {
+        // Save to localStorage
+        localStorage.setItem(ADDRESS_STORAGE_KEY, newAddress)
+
         // Fetch token balance for new address
         const balance = await getTokenBalance(newAddress)
         setTokenBalance(balance)
@@ -110,16 +143,21 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
           const basename = await getBasenameForAddress(newAddress)
           if (basename) {
             setBasenameState(basename)
+            localStorage.setItem(BASENAME_STORAGE_KEY, basename)
           } else {
             setBasenameState(null)
+            localStorage.removeItem(BASENAME_STORAGE_KEY)
           }
         } catch (err) {
           console.error("Error fetching basename:", err)
           setBasenameState(null)
+          localStorage.removeItem(BASENAME_STORAGE_KEY)
         }
       } else {
         setTokenBalance("0")
         setBasenameState(null)
+        localStorage.removeItem(ADDRESS_STORAGE_KEY)
+        localStorage.removeItem(BASENAME_STORAGE_KEY)
       }
     })
 
@@ -156,6 +194,9 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       setProvider(walletProvider)
       setIsConnected(true)
 
+      // Save to localStorage
+      localStorage.setItem(ADDRESS_STORAGE_KEY, walletAddress)
+
       // Fetch token balance
       const balance = await getTokenBalance(walletAddress)
       setTokenBalance(balance)
@@ -165,6 +206,10 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         const basename = await getBasenameForAddress(walletAddress)
         if (basename) {
           setBasenameState(basename)
+          localStorage.setItem(BASENAME_STORAGE_KEY, basename)
+        } else {
+          setBasenameState(null)
+          localStorage.removeItem(BASENAME_STORAGE_KEY)
         }
       } catch (err) {
         console.error("Error fetching basename:", err)
@@ -192,6 +237,10 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       setIsConnected(false)
       setTokenBalance("0")
 
+      // Clear localStorage
+      localStorage.removeItem(ADDRESS_STORAGE_KEY)
+      localStorage.removeItem(BASENAME_STORAGE_KEY)
+
       return true
     } catch (err: any) {
       console.error("Error disconnecting wallet:", err)
@@ -212,6 +261,10 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
           const basename = await getBasenameForAddress(address)
           if (basename) {
             setBasenameState(basename)
+            localStorage.setItem(BASENAME_STORAGE_KEY, basename)
+          } else {
+            setBasenameState(null)
+            localStorage.removeItem(BASENAME_STORAGE_KEY)
           }
         } catch (err) {
           console.error("Error refreshing basename:", err)
@@ -226,6 +279,28 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   // Set basename function
   const setBasename = (newBasename: string) => {
     setBasenameState(newBasename)
+    if (newBasename) {
+      localStorage.setItem(BASENAME_STORAGE_KEY, newBasename)
+    } else {
+      localStorage.removeItem(BASENAME_STORAGE_KEY)
+    }
+  }
+
+  // Check basename function
+  const checkBasename = async () => {
+    if (!address) return null
+
+    try {
+      const basename = await getBasenameForAddress(address)
+      if (basename) {
+        setBasenameState(basename)
+        localStorage.setItem(BASENAME_STORAGE_KEY, basename)
+      }
+      return basename
+    } catch (err) {
+      console.error("Error checking basename:", err)
+      return null
+    }
   }
 
   const value = {
@@ -241,6 +316,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
     disconnectWallet,
     refreshBalance,
     setBasename,
+    checkBasename,
   }
 
   return <Web3Context.Provider value={value}>{children}</Web3Context.Provider>

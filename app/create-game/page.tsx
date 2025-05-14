@@ -1,3 +1,5 @@
+"use client"
+
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { GameCreationWizard } from "@/components/game-creation-wizard"
