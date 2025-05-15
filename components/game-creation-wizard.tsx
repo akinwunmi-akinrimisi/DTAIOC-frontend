@@ -168,8 +168,7 @@ export function GameCreationWizard() {
       console.log("Game data from API:", gameData)
 
       // 2. Call smart contract to create game
-      // For now, we're using empty question root hashes
-      const questionRootHashes = ["0x0", "0x0", "0x0"] // Replace with actual hashes from API when available
+      const questionRootHashes = gameData.questionRootHashes || ["0x0", "0x0", "0x0"]
       const gameDuration = Number.parseInt(duration) * 3600 // Convert hours to seconds
 
       if (!walletClient) {
