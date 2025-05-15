@@ -52,7 +52,42 @@ export function GameMarketplace() {
         setError(null)
       } catch (err) {
         console.error("Failed to fetch games:", err)
-        setError("Failed to load games. Please try again.")
+        setError("Unable to load games. Using demo data instead.")
+
+        // Fallback to demo data on error
+        const demoGames = [
+          {
+            id: "demo-1",
+            creatorBasename: "demo.creator.base.eth",
+            stakeAmount: 5,
+            playerCount: 8,
+            playerLimit: 30,
+            duration: 24,
+            createdAt: new Date(Date.now() - 3600000),
+            endsAt: new Date(Date.now() + 86400000),
+          },
+          {
+            id: "demo-2",
+            creatorBasename: "trivia.master.base.eth",
+            stakeAmount: 10,
+            playerCount: 12,
+            playerLimit: 20,
+            duration: 12,
+            createdAt: new Date(Date.now() - 7200000),
+            endsAt: new Date(Date.now() + 43200000),
+          },
+          {
+            id: "demo-3",
+            creatorBasename: "crypto.quiz.base.eth",
+            stakeAmount: 3,
+            playerCount: 5,
+            playerLimit: 15,
+            duration: 48,
+            createdAt: new Date(Date.now() - 10800000),
+            endsAt: new Date(Date.now() + 172800000),
+          },
+        ]
+        setGames(demoGames)
       } finally {
         setLoading(false)
       }

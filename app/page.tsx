@@ -8,7 +8,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col w-full bg-game-dark">
       <Navbar />
       <main className="flex-1 w-full">
-        <WalletGate>
+        <WalletGate requireWallet={false}>
           <HeroSection />
         </WalletGate>
       </main>

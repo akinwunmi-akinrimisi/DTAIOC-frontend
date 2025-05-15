@@ -54,6 +54,7 @@ interface Web3ProviderProps {
 // Local storage keys
 const BASENAME_STORAGE_KEY = "dtaioc_basename"
 const ADDRESS_STORAGE_KEY = "dtaioc_address"
+const CONNECTION_STORAGE_KEY = "dtaioc_connected"
 
 export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   const [address, setAddress] = useState<string | null>(null)
@@ -64,6 +65,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
   const [isConnecting, setIsConnecting] = useState<boolean>(false)
   const [tokenBalance, setTokenBalance] = useState<string>("0")
   const [error, setError] = useState<string | null>(null)
+  const [initialized, setInitialized] = useState<boolean>(false)
 
   // Initialize web3 on component mount
   useEffect(() => {
@@ -72,8 +74,9 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         // Try to restore from localStorage first
         const storedAddress = localStorage.getItem(ADDRESS_STORAGE_KEY)
         const storedBasename = localStorage.getItem(BASENAME_STORAGE_KEY)
+        const storedConnected = localStorage.getItem(CONNECTION_STORAGE_KEY) === "true"
 
-        if (storedAddress) {
+        if (storedAddress && storedConnected) {
           setAddress(storedAddress)
 
           if (storedBasename) {
@@ -89,8 +92,12 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
               setIsConnected(true)
 
               // Fetch token balance
-              const balance = await getTokenBalance(currentAddress)
-              setTokenBalance(balance)
+              try {
+                const balance = await getTokenBalance(currentAddress)
+                setTokenBalance(balance)
+              } catch (err) {
+                console.error("Error fetching token balance:", err)
+              }
 
               // If no stored basename, try to fetch it
               if (!storedBasename) {
@@ -108,16 +115,20 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
               // Address changed or not connected, clear storage
               localStorage.removeItem(ADDRESS_STORAGE_KEY)
               localStorage.removeItem(BASENAME_STORAGE_KEY)
+              localStorage.removeItem(CONNECTION_STORAGE_KEY)
             }
           } else {
             // Not connected, clear storage
             localStorage.removeItem(ADDRESS_STORAGE_KEY)
             localStorage.removeItem(BASENAME_STORAGE_KEY)
+            localStorage.removeItem(CONNECTION_STORAGE_KEY)
           }
         }
       } catch (err) {
         console.error("Error initializing web3:", err)
         setError("Failed to initialize web3 connection")
+      } finally {
+        setInitialized(true)
       }
     }
 
@@ -126,6 +137,8 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
 
   // Set up account change listener
   useEffect(() => {
+    if (!initialized) return () => {}
+
     const cleanup = setupAccountChangeListener(async (newAddress) => {
       setAddress(newAddress)
       setIsConnected(!!newAddress)
@@ -133,10 +146,15 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       if (newAddress) {
         // Save to localStorage
         localStorage.setItem(ADDRESS_STORAGE_KEY, newAddress)
+        localStorage.setItem(CONNECTION_STORAGE_KEY, "true")
 
         // Fetch token balance for new address
-        const balance = await getTokenBalance(newAddress)
-        setTokenBalance(balance)
+        try {
+          const balance = await getTokenBalance(newAddress)
+          setTokenBalance(balance)
+        } catch (err) {
+          console.error("Error fetching token balance:", err)
+        }
 
         // Fetch basename for new address
         try {
@@ -158,21 +176,24 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         setBasenameState(null)
         localStorage.removeItem(ADDRESS_STORAGE_KEY)
         localStorage.removeItem(BASENAME_STORAGE_KEY)
+        localStorage.removeItem(CONNECTION_STORAGE_KEY)
       }
     })
 
     return cleanup
-  }, [])
+  }, [initialized])
 
   // Set up chain change listener
   useEffect(() => {
+    if (!initialized) return () => {}
+
     const cleanup = setupChainChangeListener(() => {
       // Reload the page on chain change
       window.location.reload()
     })
 
     return cleanup
-  }, [])
+  }, [initialized])
 
   // Connect wallet function
   const connectWallet = async () => {
@@ -196,10 +217,15 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
 
       // Save to localStorage
       localStorage.setItem(ADDRESS_STORAGE_KEY, walletAddress)
+      localStorage.setItem(CONNECTION_STORAGE_KEY, "true")
 
       // Fetch token balance
-      const balance = await getTokenBalance(walletAddress)
-      setTokenBalance(balance)
+      try {
+        const balance = await getTokenBalance(walletAddress)
+        setTokenBalance(balance)
+      } catch (err) {
+        console.error("Error fetching token balance:", err)
+      }
 
       // Fetch basename
       try {
@@ -208,8 +234,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
           setBasenameState(basename)
           localStorage.setItem(BASENAME_STORAGE_KEY, basename)
         } else {
-          setBasenameState(null)
-          localStorage.removeItem(BASENAME_STORAGE_KEY)
+          console.log("No basename found for address:", walletAddress)
         }
       } catch (err) {
         console.error("Error fetching basename:", err)
@@ -240,6 +265,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       // Clear localStorage
       localStorage.removeItem(ADDRESS_STORAGE_KEY)
       localStorage.removeItem(BASENAME_STORAGE_KEY)
+      localStorage.removeItem(CONNECTION_STORAGE_KEY)
 
       return true
     } catch (err: any) {
@@ -263,8 +289,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
             setBasenameState(basename)
             localStorage.setItem(BASENAME_STORAGE_KEY, basename)
           } else {
-            setBasenameState(null)
-            localStorage.removeItem(BASENAME_STORAGE_KEY)
+            console.log("No basename found for address during refresh:", address)
           }
         } catch (err) {
           console.error("Error refreshing basename:", err)
