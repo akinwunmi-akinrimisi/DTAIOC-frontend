@@ -118,7 +118,14 @@ export function WalletConnect() {
         </Alert>
       )}
 
-      {showBasenameModal && <BasenameModal onClose={() => setShowBasenameModal(false)} />}
+      {showBasenameModal && (
+        <BasenameModal
+          onClose={() => {
+            console.log("Closing basename modal from WalletConnect")
+            setShowBasenameModal(false)
+          }}
+        />
+      )}
     </div>
   )
 }

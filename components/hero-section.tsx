@@ -201,7 +201,14 @@ export function HeroSection() {
         </div>
       </div>
 
-      {showBasenameModal && <BasenameModal onClose={() => setShowBasenameModal(false)} />}
+      {showBasenameModal && (
+        <BasenameModal
+          onClose={() => {
+            console.log("Closing basename modal")
+            setShowBasenameModal(false)
+          }}
+        />
+      )}
     </div>
   )
 }

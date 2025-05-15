@@ -210,6 +210,10 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
       // Connect to the wallet
       const { address: walletAddress, walletClient: client, provider: walletProvider } = await connectBaseSmartWallet()
 
+      if (!walletAddress) {
+        throw new Error("Failed to get wallet address")
+      }
+
       setAddress(walletAddress)
       setWalletClient(client)
       setProvider(walletProvider)
@@ -240,7 +244,7 @@ export const Web3Provider: React.FC<Web3ProviderProps> = ({ children }) => {
         console.error("Error fetching basename:", err)
       }
 
-      return { address: walletAddress, walletClient: client }
+      return { address: walletAddress, basename: basename, walletClient: client }
     } catch (err: any) {
       console.error("Error connecting wallet:", err)
       setError(err.message || "Failed to connect wallet")

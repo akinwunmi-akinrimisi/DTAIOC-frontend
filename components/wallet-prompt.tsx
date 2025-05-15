@@ -41,7 +41,14 @@ export function WalletPrompt({ message, onClose, onConnect }: WalletPromptProps)
   }
 
   return (
-    <Dialog open={true} onOpenChange={onClose ? () => onClose() : undefined}>
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open && onClose) {
+          onClose()
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Connect Your Wallet</DialogTitle>
@@ -77,7 +84,15 @@ export function WalletPrompt({ message, onClose, onConnect }: WalletPromptProps)
             )}
           </Button>
           {onClose && (
-            <Button type="button" variant="outline" onClick={onClose} className="w-full">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setLocalError(null)
+                onClose()
+              }}
+              className="w-full"
+            >
               Cancel
             </Button>
           )}

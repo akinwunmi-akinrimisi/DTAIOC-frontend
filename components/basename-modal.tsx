@@ -156,7 +156,12 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
   }
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog
+      open={true}
+      onOpenChange={(open) => {
+        if (!open) onClose()
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Set Up Your Basename</DialogTitle>
@@ -209,7 +214,15 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
                   <Button type="submit" disabled={isLinking} className="w-full">
                     {isLinking ? "Linking..." : "Link Basename"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={onClose} className="w-full">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setError("")
+                      onClose()
+                    }}
+                    className="w-full"
+                  >
                     Skip for Now
                   </Button>
                 </DialogFooter>
@@ -262,7 +275,15 @@ export function BasenameModal({ onClose }: BasenameModalProps) {
                 <Button type="button" onClick={handleCreateSubmit} disabled={isCreating} className="w-full">
                   {isCreating ? "Creating..." : "Create Basename"}
                 </Button>
-                <Button type="button" variant="outline" onClick={onClose} className="w-full">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setError("")
+                    onClose()
+                  }}
+                  className="w-full"
+                >
                   Skip for Now
                 </Button>
               </DialogFooter>
